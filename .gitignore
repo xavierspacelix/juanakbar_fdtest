@@ -8,3 +8,6 @@ apps/backend/dist
 packages/prisma/dev.db
 .vscode
 uploads
+/prisma/packages/prisma/schema.prisma
+
+/generated/prisma
