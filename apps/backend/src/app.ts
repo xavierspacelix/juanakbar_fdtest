@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import swaggerUi from "swagger-ui-express";
 import swaggerJsdoc from "swagger-jsdoc";
 import authRoutes from "./routes/auth.routes";
+import bookRoutes from "./routes/book.routes";
 import cookieParser from "cookie-parser";
 
 dotenv.config();
@@ -22,5 +23,6 @@ const swaggerSpec = swaggerJsdoc({
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use("/api/auth", authRoutes);
+app.use("/api/books", bookRoutes);
 
 export default app;
