@@ -1,22 +1,19 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
-import { z } from "zod";
 import prisma from "../config/prisma";
 import { success, error } from "../utils/response";
 import * as AuthService from "../services/auth.service";
-
-const registerSchema = z.object({
-  name: z.string().min(2),
-  email: z.string().email(),
-  password: z.string().min(6),
-});
+import {
+  signAccessToken,
+  createRefreshToken,
+  verifyRefreshToken,
+  revokeRefreshToken,
+} from "../services/token.service";
 
 export async function register(req: Request, res: Response) {
   try {
     const { name, email, password } = req.body;
     const result = await AuthService.registerUser({ name, email, password });
-    // In dev we may return verifyToken to allow manual verify tests
     return res
       .status(201)
       .json(success("User registered. Check your email for verification.", result));
@@ -40,25 +37,56 @@ export async function verifyEmail(req: Request, res: Response) {
   }
 }
 
-const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6),
-});
-
 export async function login(req: Request, res: Response) {
-  const parsed = loginSchema.safeParse(req.body);
-  if (!parsed.success) {
-    return res.status(400).json(error("Validation failed", parsed.error.format()));
+  try {
+    const { email, password } = req.body;
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) return res.status(401).json(error("Invalid credentials"));
+
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) return res.status(401).json(error("Invalid credentials"));
+
+    const accessToken = signAccessToken(user.id);
+    const refreshToken = await createRefreshToken(user.id);
+
+    // Simpan refresh token di HttpOnly cookie
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    return res.json(success("Login successful", { accessToken }));
+  } catch (err: any) {
+    return res.status(500).json(error(err.message || "Login failed"));
   }
+}
 
-  const { email, password } = parsed.data;
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) return res.status(401).json(error("Invalid credentials"));
+export async function refreshToken(req: Request, res: Response) {
+  try {
+    const token = req.cookies.refreshToken;
+    if (!token) return res.status(401).json(error("No refresh token"));
 
-  const valid = await bcrypt.compare(password, user.password);
-  if (!valid) return res.status(401).json(error("Invalid credentials"));
+    const userId = await verifyRefreshToken(token);
+    if (!userId) return res.status(401).json(error("Invalid refresh token"));
 
-  const token = jwt.sign({ sub: user.id }, process.env.JWT_SECRET!, { expiresIn: "15m" });
+    const newAccessToken = signAccessToken(userId);
+    return res.json(success("Access token refreshed", { accessToken: newAccessToken }));
+  } catch (err: any) {
+    return res.status(500).json(error("Failed to refresh token"));
+  }
+}
 
-  return res.json(success("Login successful", { token }));
+export async function logout(req: Request, res: Response) {
+  try {
+    const token = req.cookies.refreshToken;
+    if (token) {
+      await revokeRefreshToken(token);
+      res.clearCookie("refreshToken");
+    }
+    return res.json(success("Logged out successfully"));
+  } catch (err: any) {
+    return res.status(500).json(error("Logout failed"));
+  }
 }
