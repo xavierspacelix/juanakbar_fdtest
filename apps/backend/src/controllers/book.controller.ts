@@ -2,6 +2,8 @@ import { Request, Response } from "express";
 import prisma from "../config/prisma";
 import { success, error } from "../utils/response";
 import { Prisma } from "@prisma/client";
+import path from "path";
+import fs from "fs";
 export async function listBooks(req: Request, res: Response) {
   try {
     const page = parseInt(req.query.page as string) || 1;
@@ -66,5 +68,75 @@ export async function createBook(req: Request, res: Response) {
     return res.status(201).json(success("Book created successfully", book));
   } catch (err: any) {
     return res.status(500).json(error("Failed to create book", err.message));
+  }
+}
+export async function updateBook(req: Request, res: Response) {
+  try {
+    const id = Number(req.params.id);
+    const { title, author, description, rating } = req.body;
+    const uploaderId = (req as any).user.id;
+    const file = req.file;
+
+    const existingBook = await prisma.book.findUnique({ where: { id } });
+    if (!existingBook) {
+      return res.status(404).json(error("Book not found"));
+    }
+
+    // Hanya uploader yang boleh mengupdate
+    if (existingBook.uploaderId !== uploaderId) {
+      return res.status(403).json(error("You are not allowed to edit this book"));
+    }
+
+    // Hapus file lama jika ada file baru
+    let thumbnail = existingBook.thumbnail;
+    if (file) {
+      if (thumbnail) {
+        const oldPath = path.join(__dirname, "../../", thumbnail);
+        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      }
+      thumbnail = `/uploads/${file.filename}`;
+    }
+
+    const updatedBook = await prisma.book.update({
+      where: { id },
+      data: {
+        title: title || existingBook.title,
+        author: author || existingBook.author,
+        description: description || existingBook.description,
+        rating: rating ? Number(rating) : existingBook.rating,
+        thumbnail,
+      },
+    });
+
+    return res.json(success("Book updated successfully", updatedBook));
+  } catch (err: any) {
+    return res.status(500).json(error("Failed to update book", err.message));
+  }
+}
+
+export async function deleteBook(req: Request, res: Response) {
+  try {
+    const id = Number(req.params.id);
+    const uploaderId = (req as any).user.id;
+
+    const existingBook = await prisma.book.findUnique({ where: { id } });
+    if (!existingBook) {
+      return res.status(404).json(error("Book not found"));
+    }
+
+    if (existingBook.uploaderId !== uploaderId) {
+      return res.status(403).json(error("You are not allowed to delete this book"));
+    }
+
+    if (existingBook.thumbnail) {
+      const filePath = path.join(__dirname, "../../", existingBook.thumbnail);
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    }
+
+    await prisma.book.delete({ where: { id } });
+
+    return res.json(success("Book deleted successfully"));
+  } catch (err: any) {
+    return res.status(500).json(error("Failed to delete book", err.message));
   }
 }
