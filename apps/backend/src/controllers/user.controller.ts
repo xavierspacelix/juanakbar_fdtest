@@ -75,11 +75,21 @@ export async function uploadAvatar(req: Request, res: Response) {
   try {
     const userId = (req as any).user.id;
     const file = req.file;
-
-    if (!file) return res.status(400).json(error("Avatar file is required"));
-
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) return res.status(404).json(error("User not found"));
+    if (!file) {
+      if (user.avatar) {
+        const oldPath = path.join(__dirname, "../../", user.avatar);
+        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      }
+      const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: { avatar: null },
+        select: { id: true, name: true, email: true, avatar: true },
+      });
+
+      return res.json(success("Avatar removed successfully", updatedUser));
+    }
 
     // Hapus avatar lama
     if (user.avatar) {

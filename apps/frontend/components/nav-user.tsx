@@ -22,6 +22,7 @@ import { getUserInitials } from "@/lib/utils";
 import { logout } from "@/services/auth.service";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/hooks/use-user";
+import Link from "next/link";
 
 export function NavUser({ user }: { user: User | null }) {
   const { isMobile } = useSidebar();
@@ -43,7 +44,9 @@ export function NavUser({ user }: { user: User | null }) {
             >
               <Avatar className="h-8 w-8 rounded-lg grayscale">
                 <AvatarImage src={user?.avatar} alt={user?.name} />
-                <AvatarFallback className="rounded-lg">{getUserInitials(user?.name ?? "")}</AvatarFallback>
+                <AvatarFallback className="rounded-lg">
+                  {getUserInitials(user?.name ?? "")}
+                </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{user?.name}</span>
@@ -66,15 +69,19 @@ export function NavUser({ user }: { user: User | null }) {
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{user?.name ?? ""}</span>
-                  <span className="text-muted-foreground truncate text-xs">{user?.email ?? ""}</span>
+                  <span className="text-muted-foreground truncate text-xs">
+                    {user?.email ?? ""}
+                  </span>
                 </div>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <IconUserCircle />
-                Account
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard/profile">
+                  <IconUserCircle />
+                  Account
+                </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

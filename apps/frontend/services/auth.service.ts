@@ -58,14 +58,14 @@ export async function me(): Promise<
 }
 
 export async function updateProfile(payload: { name?: string; email?: string; password?: string }) {
-  const res = await api.put("/auth/me", payload, { withCredentials: true });
+  const res = await api.put("/users/profile", payload, { withCredentials: true });
   return res.data;
 }
 
-export async function uploadAvatar(file: File) {
+export async function uploadAvatar(file: File | null) {
   const fd = new FormData();
-  fd.append("avatar", file);
-  const res = await api.put("/auth/avatar", fd, {
+  fd.append("avatar", file || "");
+  const res = await api.put("/users/avatar", fd, {
     withCredentials: true,
     headers: { "Content-Type": "multipart/form-data" },
   });
