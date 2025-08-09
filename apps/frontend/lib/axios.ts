@@ -1,35 +1,33 @@
 import axios from "axios";
 
 export const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api",
   withCredentials: true,
   timeout: 10000,
-  headers: {
-    "Content-Type": "application/json",
-  },
+  headers: { "Content-Type": "application/json" },
 });
 
 api.interceptors.request.use(
   (config) => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      if (token && config.headers) config.headers.Authorization = `Bearer ${token}`;
+    } catch (e) {
+      // ignore on SSR
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (err) => Promise.reject(err)
 );
 
 api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    const status = error.response?.status;
-    if (status === 401) {
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-      }
+  (res) => res,
+  (err) => {
+    const status = err.response?.status;
+    if (status === 401 && typeof window !== "undefined") {
+      localStorage.removeItem("token");
+      window.location.href = "/login";
     }
-    return Promise.reject(error);
+    return Promise.reject(err);
   }
 );
