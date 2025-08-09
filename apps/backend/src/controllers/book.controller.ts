@@ -10,14 +10,36 @@ export async function listBooks(req: Request, res: Response) {
     const limit = parseInt(req.query.limit as string) || 10;
     const search = (req.query.search as string) || "";
 
-    const where: Prisma.BookWhereInput = search
-      ? {
-          OR: [
-            { title: { contains: search, mode: Prisma.QueryMode.insensitive } },
-            { author: { contains: search, mode: Prisma.QueryMode.insensitive } },
-          ],
-        }
-      : {};
+    // Tambahan filter
+    const authorFilter = (req.query.author as string) || "";
+    const ratingFilter = req.query.rating ? parseInt(req.query.rating as string) : undefined;
+    const dateFilter = (req.query.date as string) || ""; // format: YYYY-MM-DD
+
+    // Bangun kondisi where
+    const where: Prisma.BookWhereInput = {
+      AND: [
+        search
+          ? {
+              OR: [
+                { title: { contains: search, mode: Prisma.QueryMode.insensitive } },
+                { author: { contains: search, mode: Prisma.QueryMode.insensitive } },
+              ],
+            }
+          : {},
+        authorFilter
+          ? { author: { equals: authorFilter, mode: Prisma.QueryMode.insensitive } }
+          : {},
+        ratingFilter ? { rating: ratingFilter } : {},
+        dateFilter
+          ? {
+              uploadedAt: {
+                gte: new Date(dateFilter + "T00:00:00.000Z"),
+                lt: new Date(dateFilter + "T23:59:59.999Z"),
+              },
+            }
+          : {},
+      ],
+    };
 
     const [total, books] = await Promise.all([
       prisma.book.count({ where }),
@@ -44,6 +66,7 @@ export async function listBooks(req: Request, res: Response) {
     return res.status(500).json(error("Failed to fetch books"));
   }
 }
+
 export async function createBook(req: Request, res: Response) {
   try {
     const { title, author, description, rating } = req.body;
