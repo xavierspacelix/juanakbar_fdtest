@@ -41,7 +41,22 @@ export function FilterSection({
       dateRange: value === "all" ? "" : value,
     });
   };
-
+  const getWeekStart = (date: Date) => {
+    const startOfWeek = new Date(date);
+    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+    return startOfWeek.toISOString().split("T")[0];
+  };
+  const getMonthStart = (date: Date) => {
+    const startOfMonth = new Date(date);
+    startOfMonth.setDate(1);
+    return startOfMonth.toISOString().split("T")[0];
+  };
+  const getYearStart = (date: Date) => {
+    const startOfYear = new Date(date);
+    startOfYear.setMonth(0);
+    startOfYear.setDate(1);
+    return startOfYear.toISOString().split("T")[0];
+  };
   return (
     <div className="rounded-2xl shadow-sm border  mb-6 overflow-hidden  bg-background text-foreground">
       <div className="p-4 border-b ">
@@ -115,10 +130,10 @@ export function FilterSection({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All dates</SelectItem>
-                  <SelectItem value="today">Today</SelectItem>
-                  <SelectItem value="week">This week</SelectItem>
-                  <SelectItem value="month">This month</SelectItem>
-                  <SelectItem value="year">This year</SelectItem>
+                  <SelectItem value={`${new Date().toISOString().split("T")[0]}`}>Today</SelectItem>
+                  <SelectItem value={getWeekStart(new Date())}>This week</SelectItem>
+                  <SelectItem value={getMonthStart(new Date())}>This month</SelectItem>
+                  <SelectItem value={getYearStart(new Date())}>This year</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -32,6 +32,8 @@ const BookList = () => {
         ...filters,
         page,
         limit: perPage,
+        date: filters.dateRange,
+        rating: filters.minRating,
       }),
     staleTime: 5 * 60 * 1000,
     retry: 3,
@@ -110,7 +112,7 @@ const BookList = () => {
           )}
         </div>
       </div>
-
+      {JSON.stringify(filters)}
       <FilterSection
         filters={filters}
         setFilters={setFilters}
