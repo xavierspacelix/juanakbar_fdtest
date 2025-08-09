@@ -3,15 +3,14 @@ import bcrypt from "bcrypt";
 import prisma from "../config/prisma";
 import { sha256 } from "../utils/hash";
 import { sendEmail } from "../utils/mailer";
+import { emailTemplate } from "../utils/email-template";
 
 const BCRYPT_ROUNDS = 12;
-const RESET_TTL_MS = 60 * 60 * 1000; // 1 jam
+const RESET_TTL_MS = 60 * 60 * 1000;
 
 export async function requestPasswordReset(email: string) {
   const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) return; // tidak bocorkan info user tidak ditemukan
-
-  // hapus token reset lama (opsional)
+  if (!user) return;
   await prisma.passwordReset.deleteMany({ where: { userId: user.id } });
 
   const token = randomBytes(32).toString("hex");
@@ -22,16 +21,22 @@ export async function requestPasswordReset(email: string) {
     data: { tokenHash, userId: user.id, expiresAt },
   });
 
-  const resetUrl = `${process.env.APP_URL}/reset-password?token=${token}&id=${user.id}`;
+  const resetUrl = `${process.env.APP_FRONTEND_URL}/reset-password?token=${token}&id=${user.id}`;
 
   await sendEmail({
     to: user.email,
     subject: "Reset Your Password",
     text: `Click to reset your password: ${resetUrl}`,
-    html: `<p>Click <a href="${resetUrl}">here</a> to reset your password.</p>`,
+    // html: `<p>Click <a href="${resetUrl}">here</a> to reset your password.</p>`,
+    html: emailTemplate({
+      title: "Reset Your Password",
+      greeting: "Hi there!",
+      message: "We received a request to reset your password. Click the button below to proceed.",
+      buttonText: "Reset Password",
+      buttonUrl: resetUrl,
+    }),
   });
 
-  // untuk dev, return token supaya bisa test tanpa email
   if (process.env.NODE_ENV !== "production") {
     return { resetToken: token };
   }

@@ -13,6 +13,7 @@ import { login } from "@/services/auth.service";
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { useUser } from "@/hooks/use-user";
+import Link from "next/link";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Email tidak valid" }),
@@ -76,12 +77,12 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
             <div className="grid gap-3">
               <div className="flex items-center">
                 <Label htmlFor="password">Password</Label>
-                <a
-                  href="#"
+                <Link
+                  href="/forgot-password"
                   className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
                 >
                   Forgot your password?
-                </a>
+                </Link>
               </div>
               <Input id="password" type="password" {...form.register("password")} />
               {form.formState.errors.password && (

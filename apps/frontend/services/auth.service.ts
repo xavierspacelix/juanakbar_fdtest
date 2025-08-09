@@ -71,3 +71,15 @@ export async function uploadAvatar(file: File | null) {
   });
   return res.data;
 }
+
+export async function forgotPassword(email: string) {
+  return (await api.post("/auth/forgot-password", { email })).data;
+}
+
+export async function resetPassword(token: string, password: string, id: number) {
+  return (await api.post("/auth/reset-password", { token, password, id })).data;
+}
+
+export async function verifyEmail(token: string) {
+  return (await api.post("/auth/verify-email", { token })).data;
+}

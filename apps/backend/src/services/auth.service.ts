@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 import { randomBytes } from "crypto";
 import { sha256 } from "../utils/hash";
 import { sendEmail } from "../utils/mailer";
+import { emailTemplate } from "../utils/email-template";
 
 const BCRYPT_ROUNDS = 12;
 const VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
@@ -44,14 +45,20 @@ export async function registerUser({
   });
 
   // Build verify url
-  const verifyUrl = `${process.env.APP_URL}/api/auth/verify-email?token=${token}&id=${user.id}`;
+  const verifyUrl = `${process.env.APP_FRONTEND_URL}/api/auth/verify-email?token=${token}&id=${user.id}`;
 
   // send email (async)
   await sendEmail({
     to: user.email,
     subject: "Please verify your email",
     text: `Click to verify: ${verifyUrl}`,
-    html: `<p>Click to verify your account: <a href="${verifyUrl}">${verifyUrl}</a></p>`,
+    html: emailTemplate({
+      title: "Please verify your email",
+      greeting: "Hi there!",
+      message: `Thank you for signing up. Please verify your email to activate your account.`,
+      buttonText: "Verify Email",
+      buttonUrl: verifyUrl,
+    }),
   });
 
   // For dev convenience only: return token in response when not production
