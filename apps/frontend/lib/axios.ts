@@ -1,38 +1,54 @@
+// lib/axios.ts
 import axios from "axios";
 
 export const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api",
-  withCredentials: true, // VERY IMPORTANT to send/receive cookies
-  timeout: 10000,
-  headers: { "Content-Type": "application/json" },
+  withCredentials: true,
 });
 
-// request interceptor can attach nothing (cookies sent automatically)
-api.interceptors.request.use((config) => config);
+let refreshPromise: Promise<any> | null = null;
 
-// response interceptor: try refresh once on 401
+const publicPaths = ["/", "/auth/login", "/auth/register", "/auth/refresh"];
+
 api.interceptors.response.use(
   (res) => res,
   async (err) => {
     const originalRequest = err.config;
     const status = err.response?.status;
 
-    // guard: only attempt once per request
-    if (status === 401 && !originalRequest._retry) {
+    const isPublic = publicPaths.some((path) => originalRequest?.url?.startsWith(path));
+
+    if (status === 401 && !isPublic && !originalRequest._retry) {
       originalRequest._retry = true;
+
+      // Cek apakah cookie refresh token ada
+      const hasRefreshCookie =
+        typeof document !== "undefined" &&
+        document.cookie.split(";").some((c) => c.trim().startsWith("refreshToken="));
+
+      if (!hasRefreshCookie) {
+        if (typeof window !== "undefined") {
+          window.location.href = "/login";
+        }
+        return Promise.reject(err);
+      }
+
       try {
-        // call refresh endpoint (cookies sent automatically)
-        await api.post("/auth/refresh-token");
-        // retry original request
+        if (!refreshPromise) {
+          refreshPromise = api
+            .post("/auth/refresh-token", {}, { withCredentials: true })
+            .finally(() => (refreshPromise = null));
+        }
+        await refreshPromise;
         return api(originalRequest);
       } catch (refreshErr) {
-        // refresh failed → redirect to login
         if (typeof window !== "undefined") {
           window.location.href = "/login";
         }
         return Promise.reject(refreshErr);
       }
     }
+
     return Promise.reject(err);
   }
 );

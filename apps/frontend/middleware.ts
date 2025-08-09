@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  const publicPaths = ["/login", "/register", "/api"]; // allow login/register and API routes
+  const publicPaths = ["/login", "/register", "/"];
   if (publicPaths.some((p) => pathname.startsWith(p))) {
     return NextResponse.next();
   }

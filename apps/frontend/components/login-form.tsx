@@ -1,5 +1,4 @@
 "use client";
-
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +12,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { login } from "@/services/auth.service";
 import { useState } from "react";
 import toast from "react-hot-toast";
+import { useUser } from "@/hooks/use-user";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Email tidak valid" }),
@@ -22,6 +22,7 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 export function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
+  const { mutate } = useUser();
   const router = useRouter();
   const [serverError, setServerError] = useState("");
   const form = useForm<LoginFormValues>({
@@ -39,8 +40,9 @@ export function LoginForm({ className, ...props }: React.ComponentProps<"div">) 
           success: "Login berhasil!",
           error: "Check your email and password!",
         })
-        .then((res) => {
+        .then(async (res) => {
           if (res.success) {
+            await mutate();
             router.push("/dashboard");
           }
         });
