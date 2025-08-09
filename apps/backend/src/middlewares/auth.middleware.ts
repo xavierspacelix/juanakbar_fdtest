@@ -1,19 +1,16 @@
 import { Request, Response, NextFunction } from "express";
-import jwt, { JwtPayload } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import { error } from "../utils/response";
 
-export function authMiddleware(req: Request, res: Response, next: NextFunction) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader) return res.status(401).json(error("No token provided"));
-
-  const token = authHeader.split(" ")[1];
+export function requireAuth(req: Request, res: Response, next: NextFunction) {
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as unknown as JwtPayload;
-    if (!decoded.sub) return res.status(401).json(error("Invalid token payload"));
+    const token = req.cookies["accessToken"];
+    if (!token) return res.status(401).json(error("Unauthorized"));
 
-    (req as any).user = { id: Number(decoded.sub) };
+    const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET!) as any;
+    req.user = { id: Number(decoded.sub) } as any;
     next();
   } catch (err) {
-    return res.status(401).json(error("Invalid token"));
+    return res.status(401).json(error("Unauthorized"));
   }
 }

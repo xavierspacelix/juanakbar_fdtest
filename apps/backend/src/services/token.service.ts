@@ -1,35 +1,56 @@
 import { randomBytes } from "crypto";
-import jwt from "jsonwebtoken";
 import prisma from "../config/prisma";
 import { sha256 } from "../utils/hash";
+import { signAccessToken, signRefreshToken, verifyRefreshToken } from "../utils/jwt";
 
-const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 hari
-const ACCESS_TOKEN_TTL = "15m";
+const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
-export function signAccessToken(userId: number) {
-  return jwt.sign({ sub: userId }, process.env.JWT_SECRET!, { expiresIn: ACCESS_TOKEN_TTL });
-}
-
-export async function createRefreshToken(userId: number) {
-  const token = randomBytes(40).toString("hex");
-  const tokenHash = sha256(token);
+export async function createTokensAndSetCookies(res: any, userId: number) {
+  const accessToken = signAccessToken(userId);
+  const refreshToken = signRefreshToken(userId);
+  const tokenHash = sha256(refreshToken);
   const expiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_MS);
 
   await prisma.refreshToken.create({
     data: { tokenHash, userId, expiresAt },
   });
 
-  return token;
+  const isProd = process.env.NODE_ENV === "production";
+  res.cookie("accessToken", accessToken, {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: "strict",
+    maxAge: 15 * 60 * 1000,
+  });
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: "strict",
+    maxAge: REFRESH_TOKEN_TTL_MS,
+  });
+
+  return { accessToken, refreshToken };
 }
 
-export async function verifyRefreshToken(token: string) {
-  const tokenHash = sha256(token);
-  const record = await prisma.refreshToken.findUnique({ where: { tokenHash } });
-  if (!record || record.expiresAt < new Date()) return null;
-  return record.userId;
+export async function rotateRefreshToken(oldRefreshToken: string, res: any) {
+  const payload: any = verifyRefreshToken(oldRefreshToken) as any;
+  const userId = Number(payload.sub);
+
+  const hash = sha256(oldRefreshToken);
+  const rec = await prisma.refreshToken.findUnique({ where: { tokenHash: hash } });
+  if (!rec || rec.userId !== userId || rec.expiresAt < new Date()) {
+    throw Object.assign(new Error("Invalid refresh token"), { status: 401 });
+  }
+  await prisma.refreshToken.delete({ where: { id: rec.id } });
+
+  return createTokensAndSetCookies(res, userId);
 }
 
-export async function revokeRefreshToken(token: string) {
-  const tokenHash = sha256(token);
-  await prisma.refreshToken.deleteMany({ where: { tokenHash } });
+export async function revokeRefreshToken(refreshToken: string) {
+  const hash = sha256(refreshToken);
+  await prisma.refreshToken.deleteMany({ where: { tokenHash: hash } });
+}
+
+export async function revokeAllUserRefreshTokens(userId: number) {
+  await prisma.refreshToken.deleteMany({ where: { userId } });
 }
