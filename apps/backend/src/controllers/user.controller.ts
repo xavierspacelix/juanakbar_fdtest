@@ -4,7 +4,36 @@ import bcrypt from "bcrypt";
 import { success, error } from "../utils/response";
 import path from "path";
 import fs from "fs";
+import { getUsers as getUsersService } from "../services/user.service";
+export const getUsers = async (req: Request, res: Response) => {
+  try {
+    const query: { isVerified?: boolean; search?: string } = {};
+    if ("isVerified" in req.query) {
+      const isVerified = req.query.isVerified;
+      if (isVerified !== "true" && isVerified !== "false") {
+        return res
+          .status(400)
+          .json(error('Invalid isVerified parameter. Must be "true" or "false"', null));
+      }
+      query.isVerified = isVerified === "true";
+    }
 
+    // Validasi manual untuk search
+    if ("search" in req.query) {
+      const search = req.query.search;
+      if (typeof search !== "string" || search.trim() === "") {
+        return res
+          .status(400)
+          .json(error("Invalid search parameter. Must be a non-empty string", null));
+      }
+      query.search = search;
+    }
+    const users = await getUsersService(query);
+    return res.status(200).json(success("Users retrieved successfully", users));
+  } catch (err) {
+    return res.status(500).json(error("Failed to fetch users"));
+  }
+};
 export async function getProfile(req: Request, res: Response) {
   try {
     const userId = (req as any).user.id;
@@ -21,7 +50,6 @@ export async function getProfile(req: Request, res: Response) {
     return res.status(500).json(error("Failed to fetch profile"));
   }
 }
-
 export async function updateProfile(req: Request, res: Response) {
   try {
     const userId = (req as any).user.id;
