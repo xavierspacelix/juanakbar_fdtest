@@ -1,9 +1,10 @@
 import { Filters } from "@/types/book";
-import { Star, Filter, X, Calendar, User, StarIcon, ChevronDown } from "lucide-react"
+import { Star, Filter, X, Calendar, User, StarIcon, ChevronDown } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Slider } from "../ui/slider";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
+
 export function FilterSection({
   filters,
   setFilters,
@@ -27,23 +28,37 @@ export function FilterSection({
     });
   };
 
+  const handleAuthorChange = (value: string) => {
+    setFilters({
+      ...filters,
+      author: value === "all" ? "" : value,
+    });
+  };
+
+  const handleDateChange = (value: string) => {
+    setFilters({
+      ...filters,
+      dateRange: value === "all" ? "" : value,
+    });
+  };
+
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 mb-6 overflow-hidden">
-      <div className="p-4 border-b border-gray-100">
+    <div className="rounded-2xl shadow-sm border  mb-6 overflow-hidden  bg-background text-foreground">
+      <div className="p-4 border-b ">
         <div className="flex items-center justify-between">
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2 hover:text-gray-700 transition-colors"
+            className="flex items-center gap-2  transition-colors"
           >
-            <Filter className="w-5 h-5 text-gray-600" />
-            <h2 className="font-semibold text-gray-900">Filters</h2>
+            <Filter className="w-5 h-5 text-foreground" />
+            <h2 className="font-semibold text-foreground">Filters</h2>
             {activeFiltersCount > 0 && (
               <Badge variant="secondary" className="bg-blue-100 text-blue-700">
                 {activeFiltersCount} active
               </Badge>
             )}
             <ChevronDown
-              className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${showFilters ? "rotate-180" : ""}`}
+              className={`w-4 h-4 text-foreground transition-transform duration-200 ${showFilters ? "rotate-180" : ""}`}
             />
           </button>
           <div className="flex items-center gap-2">
@@ -52,7 +67,7 @@ export function FilterSection({
                 variant="ghost"
                 size="sm"
                 onClick={clearFilters}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-foreground hover:text-gray-700"
               >
                 <X className="w-4 h-4 mr-1" />
                 Clear all
@@ -70,14 +85,11 @@ export function FilterSection({
         <div className="p-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
+              <label className="text-sm font-medium text-foreground flex items-center gap-1">
                 <User className="w-4 h-4" />
                 Author
               </label>
-              <Select
-                value={filters.author}
-                onValueChange={(value) => setFilters({ ...filters, author: value })}
-              >
+              <Select value={filters.author || "all"} onValueChange={handleAuthorChange}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="All authors" />
                 </SelectTrigger>
@@ -93,14 +105,11 @@ export function FilterSection({
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
+              <label className="text-sm font-medium text-foreground flex items-center gap-1">
                 <Calendar className="w-4 h-4" />
                 Date Uploaded
               </label>
-              <Select
-                value={filters.dateRange}
-                onValueChange={(value) => setFilters({ ...filters, dateRange: value })}
-              >
+              <Select value={filters.dateRange || "all"} onValueChange={handleDateChange}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="All dates" />
                 </SelectTrigger>
@@ -115,7 +124,7 @@ export function FilterSection({
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
+              <label className="text-sm font-medium text-foreground flex items-center gap-1">
                 <StarIcon className="w-4 h-4" />
                 Minimum Rating
               </label>
@@ -128,7 +137,7 @@ export function FilterSection({
                   step={0.5}
                   className="w-full"
                 />
-                <div className="flex items-center justify-between text-xs text-gray-500">
+                <div className="flex items-center justify-between text-xs text-foreground">
                   <span>0</span>
                   <div className="flex items-center gap-1">
                     <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
