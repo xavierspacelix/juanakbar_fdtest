@@ -24,10 +24,13 @@ api.interceptors.response.use(
   (res) => res,
   (err) => {
     const status = err.response?.status;
-    if (status === 401 && typeof window !== "undefined") {
+    const requestUrl = err.config?.url || "";
+
+    if (status === 401 && typeof window !== "undefined" && !requestUrl.includes("/auth/login")) {
       localStorage.removeItem("token");
       window.location.href = "/login";
     }
+
     return Promise.reject(err);
   }
 );
