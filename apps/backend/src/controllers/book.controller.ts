@@ -10,12 +10,10 @@ export async function listBooks(req: Request, res: Response) {
     const limit = parseInt(req.query.limit as string) || 10;
     const search = (req.query.search as string) || "";
 
-    // Tambahan filter
     const authorFilter = (req.query.author as string) || "";
     const ratingFilter = req.query.rating ? parseInt(req.query.rating as string) : undefined;
     const dateFilter = (req.query.date as string) || ""; // format: YYYY-MM-DD
-
-    // Bangun kondisi where
+    const uploaderFilter = parseInt(req.query.uploader as string) || undefined;
     const where: Prisma.BookWhereInput = {
       AND: [
         search
@@ -38,6 +36,7 @@ export async function listBooks(req: Request, res: Response) {
               },
             }
           : {},
+        uploaderFilter ? { uploaderId: uploaderFilter } : {},
       ],
     };
 

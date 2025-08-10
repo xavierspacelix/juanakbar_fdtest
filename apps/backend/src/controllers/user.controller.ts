@@ -4,10 +4,16 @@ import bcrypt from "bcrypt";
 import { success, error } from "../utils/response";
 import path from "path";
 import fs from "fs";
-import { getUsers as getUsersService } from "../services/user.service";
+import { getUsersService } from "../services/user.service";
 export const getUsers = async (req: Request, res: Response) => {
   try {
-    const query: { isVerified?: boolean; search?: string } = {};
+    const query: {
+      isVerified?: boolean;
+      search?: string;
+      page?: number;
+      limit?: number;
+    } = {};
+
     if ("isVerified" in req.query) {
       const isVerified = req.query.isVerified;
       if (isVerified !== "true" && isVerified !== "false") {
@@ -18,7 +24,6 @@ export const getUsers = async (req: Request, res: Response) => {
       query.isVerified = isVerified === "true";
     }
 
-    // Validasi manual untuk search
     if ("search" in req.query) {
       const search = req.query.search;
       if (typeof search !== "string" || search.trim() === "") {
@@ -28,9 +33,15 @@ export const getUsers = async (req: Request, res: Response) => {
       }
       query.search = search;
     }
-    const users = await getUsersService(query);
-    return res.status(200).json(success("Users retrieved successfully", users));
+
+    // Pagination defaults
+    query.page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
+    query.limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
+
+    const result = await getUsersService(query);
+    return res.status(200).json(success("Users retrieved successfully", result));
   } catch (err) {
+    console.error(err);
     return res.status(500).json(error("Failed to fetch users"));
   }
 };

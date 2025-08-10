@@ -2,7 +2,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { Book, Filters, ApiResponse } from "@/types/book";
 import { useQuery } from "@tanstack/react-query";
-import { BookService } from "@/services/books.service";
+import { BookService } from "@/services/bookspublic.service";
 import { Badge } from "../ui/badge";
 import { BookCard } from "./book-card";
 import { Pagination } from "./pagination";
