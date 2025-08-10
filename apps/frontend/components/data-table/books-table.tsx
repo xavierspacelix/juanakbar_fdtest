@@ -1,18 +1,537 @@
+// "use client";
+
+// import * as React from "react";
+// import { ArrowUpDown, BookOpen, MoreHorizontal, Star } from "lucide-react";
+// import { Button } from "@/components/ui/button";
+// import { DataTable } from "./data-table";
+// import { createBook, deleteBook, getBooks, updateBook } from "@/services/books.service";
+// import {
+//   DropdownMenu,
+//   DropdownMenuContent,
+//   DropdownMenuItem,
+//   DropdownMenuLabel,
+//   DropdownMenuTrigger,
+// } from "../ui/dropdown-menu";
+// import { IconEdit, IconTrash } from "@tabler/icons-react";
+// import {
+//   Dialog,
+//   DialogContent,
+//   DialogDescription,
+//   DialogFooter,
+//   DialogHeader,
+//   DialogTitle,
+// } from "../ui/dialog";
+// import { Input } from "../ui/input";
+// import { Label } from "../ui/label";
+// import Image from "next/image";
+// import { useUser } from "@/hooks/use-user";
+// import toast from "react-hot-toast";
+
+// export interface Book {
+//   id: number;
+//   title: string;
+//   author: string;
+//   description?: string;
+//   thumbnail?: string;
+//   rating?: number;
+//   uploadedAt: string;
+//   uploader: {
+//     id: number;
+//     name: string;
+//     email: string;
+//   };
+// }
+
+// export function BooksTable() {
+//   const { user } = useUser();
+//   const [books, setBooks] = React.useState<Book[]>([]);
+//   const [loading, setLoading] = React.useState(false);
+//   const [search, setSearch] = React.useState("");
+//   const [filters, setFilters] = React.useState<Record<string, string>>({});
+//   const [pagination, setPagination] = React.useState({
+//     pageIndex: 0,
+//     pageSize: 10,
+//     pageCount: 0,
+//     total: 0,
+//   });
+//   const [createDialogOpen, setCreateDialogOpen] = React.useState(false);
+//   const [editDialogOpen, setEditDialogOpen] = React.useState(false);
+//   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+//   const [selectedBook, setSelectedBook] = React.useState<Book | null>(null);
+//   const [createForm, setCreateForm] = React.useState({
+//     title: "",
+//     author: "",
+//     description: "",
+//     rating: "",
+//     thumbnail: undefined as File | undefined,
+//   });
+//   const [editForm, setEditForm] = React.useState({
+//     title: "",
+//     author: "",
+//     description: "",
+//     rating: "",
+//     thumbnail: undefined as File | undefined,
+//   });
+//   const [thumbnailPreview, setThumbnailPreview] = React.useState<string | null>(null);
+//   const [isSubmitting, setIsSubmitting] = React.useState(false);
+//   const fetchBooks = async () => {
+//     setLoading(true);
+//     try {
+//       const params: any = {
+//         page: pagination.pageIndex + 1,
+//         limit: pagination.pageSize,
+//         uploader: user?.id,
+//       };
+//       if (search) params.search = search;
+//       if (Object.keys(filters).length > 0) params.filters = filters;
+//       const res = await getBooks(params);
+//       setBooks(res.data.books);
+//       setPagination((prev) => ({
+//         ...prev,
+//         pageCount: res.data.totalPages,
+//         total: res.data.total,
+//       }));
+//     } catch (error) {
+//       console.error("Failed to fetch books:", error);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+//   const handleCreate = () => {
+//     setCreateForm({
+//       title: "",
+//       author: "",
+//       description: "",
+//       rating: "",
+//       thumbnail: undefined,
+//     });
+//     setThumbnailPreview(null);
+//     setCreateDialogOpen(true);
+//   };
+//   const handleCreateSubmit = async () => {
+//     setIsSubmitting(true);
+//     try {
+//       await createBook({
+//         title: createForm.title,
+//         author: createForm.author,
+//         description: createForm.description,
+//         rating: createForm.rating ? Number(createForm.rating) : undefined,
+//         thumbnail: createForm.thumbnail,
+//       });
+//       setCreateDialogOpen(false);
+//       toast.success("Book created successfully");
+//       await fetchBooks();
+//     } catch (error) {
+//       toast.error("Failed to create book");
+//     } finally {
+//       setIsSubmitting(false);
+//     }
+//   };
+//   const handleEdit = (book: Book) => {
+//     setSelectedBook(book);
+//     setEditForm({
+//       title: book.title,
+//       author: book.author,
+//       description: book.description || "",
+//       rating: book.rating?.toString() || "",
+//       thumbnail: undefined,
+//     });
+//     setThumbnailPreview(
+//       book.thumbnail ? process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") + book.thumbnail! : null
+//     );
+//     setEditDialogOpen(true);
+//   };
+//   const handleEditSubmit = async () => {
+//     if (!selectedBook) return;
+//     setIsSubmitting(true);
+//     try {
+//       await updateBook(selectedBook.id, {
+//         title: editForm.title,
+//         author: editForm.author,
+//         description: editForm.description,
+//         rating: editForm.rating ? Number(editForm.rating) : undefined,
+//         thumbnail: editForm.thumbnail,
+//       });
+//       toast.success("Book updated successfully");
+//       fetchBooks();
+//     } catch (error) {
+//       toast.error("Failed to update book");
+//     } finally {
+//       setEditDialogOpen(false);
+//       setIsSubmitting(false);
+//     }
+//   };
+//   const handleDelete = (book: Book) => {
+//     setSelectedBook(book);
+//     setDeleteDialogOpen(true);
+//   };
+
+//   const handleDeleteConfirm = async () => {
+//     if (!selectedBook) return;
+//     setIsSubmitting(true);
+//     try {
+//       await deleteBook(selectedBook.id);
+//       setDeleteDialogOpen(false);
+//       toast.success("Book deleted successfully");
+//       fetchBooks();
+//     } catch (error) {
+//       toast.error("Failed to delete book");
+//     } finally {
+//       setIsSubmitting(false);
+//     }
+//   };
+//   const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>, isCreate: boolean) => {
+//     const file = e.target.files?.[0];
+//     if (file) {
+//       if (isCreate) {
+//         setCreateForm((prev) => ({ ...prev, thumbnail: file }));
+//       } else {
+//         setEditForm((prev) => ({ ...prev, thumbnail: file }));
+//       }
+//       setThumbnailPreview(URL.createObjectURL(file));
+//     }
+//   };
+
+//   React.useEffect(() => {
+//     fetchBooks();
+//   }, [pagination.pageIndex, pagination.pageSize, search, filters]);
+//   React.useEffect(() => {
+//     return () => {
+//       if (thumbnailPreview) {
+//         URL.revokeObjectURL(thumbnailPreview);
+//       }
+//     };
+//   }, [thumbnailPreview]);
+//   return (
+//     <div className="container w-full">
+//       <div className="mb-8 flex items-center justify-between">
+//         <div>
+//           <h1 className="text-3xl font-bold">Books Management</h1>
+//           <p className="text-gray-500 mt-2">Manage library books info.</p>
+//         </div>
+//         <Button variant="default" onClick={handleCreate}>
+//           Add Book
+//         </Button>
+//       </div>
+
+//       <DataTable
+//         columns={[
+//           {
+//             accessorKey: "title",
+//             header: ({ column }) => (
+//               <Button
+//                 variant="ghost"
+//                 onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+//                 className="h-auto p-0 font-semibold"
+//               >
+//                 Title
+//                 <ArrowUpDown className="ml-2 h-4 w-4" />
+//               </Button>
+//             ),
+//             cell: ({ row }) => {
+//               const book = row.original as Book;
+//               return (
+//                 <div className="flex items-center gap-3">
+//                   <BookOpen className="h-4 w-4 text-primary" />
+//                   <span>{book.title}</span>
+//                 </div>
+//               );
+//             },
+//           },
+//           {
+//             accessorKey: "author",
+//             header: "Author",
+//           },
+//           {
+//             accessorKey: "description",
+//             header: "Description",
+//           },
+//           {
+//             accessorKey: "rating",
+//             header: "Rating",
+//             cell: ({ row }) => {
+//               const book = row.original as Book;
+//               return (
+//                 <div className="flex items-center gap-1">
+//                   {[...Array(5)].map((_, i) => (
+//                     <Star
+//                       key={i}
+//                       className={`w-3 h-3 ${
+//                         i < Math.floor(book.rating!)
+//                           ? "fill-amber-400 text-amber-400"
+//                           : "fill-gray-200 text-gray-200"
+//                       }`}
+//                     />
+//                   ))}
+//                 </div>
+//               );
+//             },
+//           },
+//           {
+//             accessorKey: "uploadedAt",
+//             header: "Published",
+//             cell: ({ row }) => new Date(row.getValue("uploadedAt")).toLocaleDateString(),
+//           },
+//           {
+//             id: "actions",
+//             enableHiding: false,
+//             cell: ({ row }) => {
+//               const book = row.original as Book;
+//               return (
+//                 <DropdownMenu>
+//                   <DropdownMenuTrigger asChild>
+//                     <Button variant="ghost" className="h-8 w-8 p-0">
+//                       <MoreHorizontal className="h-4 w-4" />
+//                     </Button>
+//                   </DropdownMenuTrigger>
+//                   <DropdownMenuContent align="end">
+//                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
+//                     <DropdownMenuItem onClick={() => handleEdit(book)}>
+//                       <IconEdit className="mr-2 h-4 w-4" />
+//                       Edit
+//                     </DropdownMenuItem>
+//                     <DropdownMenuItem onClick={() => handleDelete(book)} className="text-red-600">
+//                       <IconTrash className="mr-2 h-4 w-4 text-red-600" />
+//                       Delete
+//                     </DropdownMenuItem>
+//                   </DropdownMenuContent>
+//                 </DropdownMenu>
+//               );
+//             },
+//           },
+//         ]}
+//         data={books}
+//         searchKey="title"
+//         searchPlaceholder="Search books by title or author..."
+//         filterOptions={[]}
+//         pagination={{
+//           pageIndex: pagination.pageIndex,
+//           pageSize: pagination.pageSize,
+//           pageCount: pagination.pageCount,
+//           total: pagination.total,
+//           onPageChange: (page) => setPagination((prev) => ({ ...prev, pageIndex: page })),
+//           onPageSizeChange: (size) =>
+//             setPagination((prev) => ({ ...prev, pageSize: size, pageIndex: 0 })),
+//         }}
+//         onSearchChange={setSearch}
+//         onFilterChange={setFilters}
+//         loading={loading}
+//       />
+//       <Dialog
+//         open={createDialogOpen}
+//         onOpenChange={(open) => {
+//           setCreateDialogOpen(open);
+//           if (!open) setThumbnailPreview(null);
+//         }}
+//       >
+//         <DialogContent>
+//           <DialogHeader>
+//             <DialogTitle>Create Book</DialogTitle>
+//             <DialogDescription>Add a new book to the library.</DialogDescription>
+//           </DialogHeader>
+//           <div className="grid gap-4 py-4">
+//             <div className="grid grid-cols-4 items-center gap-4">
+//               <Label htmlFor="create-title" className="text-right">
+//                 Title
+//               </Label>
+//               <Input
+//                 id="create-title"
+//                 value={createForm.title}
+//                 onChange={(e) => setCreateForm((prev) => ({ ...prev, title: e.target.value }))}
+//                 className="col-span-3"
+//               />
+//             </div>
+//             <div className="grid grid-cols-4 items-center gap-4">
+//               <Label htmlFor="create-author" className="text-right">
+//                 Author
+//               </Label>
+//               <Input
+//                 id="create-author"
+//                 value={createForm.author}
+//                 onChange={(e) => setCreateForm((prev) => ({ ...prev, author: e.target.value }))}
+//                 className="col-span-3"
+//               />
+//             </div>
+//             <div className="grid grid-cols-4 items-center gap-4">
+//               <Label htmlFor="create-description" className="text-right">
+//                 Description
+//               </Label>
+//               <Input
+//                 id="create-description"
+//                 value={createForm.description}
+//                 onChange={(e) =>
+//                   setCreateForm((prev) => ({ ...prev, description: e.target.value }))
+//                 }
+//                 className="col-span-3"
+//               />
+//             </div>
+//             <div className="grid grid-cols-4 items-center gap-4">
+//               <Label htmlFor="create-rating" className="text-right">
+//                 Rating
+//               </Label>
+//               <Input
+//                 id="create-rating"
+//                 type="number"
+//                 min="0"
+//                 max="5"
+//                 value={createForm.rating}
+//                 onChange={(e) => setCreateForm((prev) => ({ ...prev, rating: e.target.value }))}
+//                 className="col-span-3"
+//               />
+//             </div>
+//             <div className="grid grid-cols-4 items-center gap-4">
+//               <Label htmlFor="create-thumbnail" className="text-right">
+//                 Thumbnail
+//               </Label>
+//               <div className="col-span-3 space-y-2">
+//                 {thumbnailPreview && (
+//                   <Image
+//                     src={thumbnailPreview}
+//                     alt="Thumbnail Preview"
+//                     width={100}
+//                     height={100}
+//                     className="object-cover rounded"
+//                   />
+//                 )}
+//                 <Input
+//                   id="create-thumbnail"
+//                   type="file"
+//                   accept="image/*"
+//                   onChange={(e) => handleThumbnailChange(e, true)}
+//                 />
+//               </div>
+//             </div>
+//           </div>
+//           <DialogFooter>
+//             <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
+//               Cancel
+//             </Button>
+//             <Button onClick={handleCreateSubmit} disabled={isSubmitting}>
+//               {isSubmitting ? "Creating..." : "Create"}
+//             </Button>
+//           </DialogFooter>
+//         </DialogContent>
+//       </Dialog>
+//       <Dialog
+//         open={editDialogOpen}
+//         onOpenChange={(open) => {
+//           setEditDialogOpen(open);
+//           if (!open) setThumbnailPreview(null);
+//         }}
+//       >
+//         <DialogContent>
+//           <DialogHeader>
+//             <DialogTitle>Edit Book</DialogTitle>
+//             <DialogDescription>Update the book details below.</DialogDescription>
+//           </DialogHeader>
+//           <div className="grid gap-4 py-4">
+//             <div className="grid grid-cols-4 items-center gap-4">
+//               <Label htmlFor="title" className="text-right">
+//                 Title
+//               </Label>
+//               <Input
+//                 id="title"
+//                 value={editForm.title}
+//                 onChange={(e) => setEditForm((prev) => ({ ...prev, title: e.target.value }))}
+//                 className="col-span-3"
+//               />
+//             </div>
+//             <div className="grid grid-cols-4 items-center gap-4">
+//               <Label htmlFor="author" className="text-right">
+//                 Author
+//               </Label>
+//               <Input
+//                 id="author"
+//                 value={editForm.author}
+//                 onChange={(e) => setEditForm((prev) => ({ ...prev, author: e.target.value }))}
+//                 className="col-span-3"
+//               />
+//             </div>
+//             <div className="grid grid-cols-4 items-center gap-4">
+//               <Label htmlFor="description" className="text-right">
+//                 Description
+//               </Label>
+//               <Input
+//                 id="description"
+//                 value={editForm.description}
+//                 onChange={(e) => setEditForm((prev) => ({ ...prev, description: e.target.value }))}
+//                 className="col-span-3"
+//               />
+//             </div>
+//             <div className="grid grid-cols-4 items-center gap-4">
+//               <Label htmlFor="rating" className="text-right">
+//                 Rating
+//               </Label>
+//               <Input
+//                 id="rating"
+//                 type="number"
+//                 min="0"
+//                 max="5"
+//                 value={editForm.rating}
+//                 onChange={(e) => setEditForm((prev) => ({ ...prev, rating: e.target.value }))}
+//                 className="col-span-3"
+//               />
+//             </div>
+//             <div className="grid grid-cols-4 items-center gap-4">
+//               <Label htmlFor="thumbnail" className="text-right">
+//                 Thumbnail
+//               </Label>
+//               <div className="col-span-3 space-y-2">
+//                 {thumbnailPreview && (
+//                   <Image
+//                     src={thumbnailPreview}
+//                     alt="Thumbnail Preview"
+//                     width={100}
+//                     height={100}
+//                     className="object-cover rounded"
+//                   />
+//                 )}
+//                 <Input
+//                   id="thumbnail"
+//                   type="file"
+//                   accept="image/*"
+//                   onChange={(e) => handleThumbnailChange(e, false)}
+//                 />
+//               </div>
+//             </div>
+//           </div>
+//           <DialogFooter>
+//             <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+//               Cancel
+//             </Button>
+//             <Button onClick={handleEditSubmit} disabled={isSubmitting}>
+//               {isSubmitting ? "Saving..." : "Save"}
+//             </Button>
+//           </DialogFooter>
+//         </DialogContent>
+//       </Dialog>
+
+//       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+//         <DialogContent>
+//           <DialogHeader>
+//             <DialogTitle>Delete Book</DialogTitle>
+//             <DialogDescription>
+//               Are you sure you want to delete "{selectedBook?.title}"? This action cannot be undone.
+//             </DialogDescription>
+//           </DialogHeader>
+//           <DialogFooter>
+//             <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+//               Cancel
+//             </Button>
+//             <Button variant="destructive" onClick={handleDeleteConfirm} disabled={isSubmitting}>
+//               {isSubmitting ? "Deleting..." : "Delete"}
+//             </Button>
+//           </DialogFooter>
+//         </DialogContent>
+//       </Dialog>
+//     </div>
+//   );
+// }
 "use client";
 
 import * as React from "react";
-import { ArrowUpDown, BookOpen, MoreHorizontal, Star } from "lucide-react";
+import { ArrowUpDown, BookOpen, MoreHorizontal, Plus, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DataTable } from "./data-table";
-import { createBook, deleteBook, getBooks, updateBook } from "@/services/books.service";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from "../ui/dropdown-menu";
-import { IconEdit, IconTrash } from "@tabler/icons-react";
 import {
   Dialog,
   DialogContent,
@@ -20,12 +539,25 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "../ui/dialog";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { DataTable } from "./data-table";
+import { getBooks, updateBook, deleteBook, createBook } from "@/services/books.service";
+import { IconEdit, IconTrash } from "@tabler/icons-react";
 import Image from "next/image";
-import { useUser } from "@/hooks/use-user";
+import { useForm, SubmitHandler } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 import toast from "react-hot-toast";
+import { useUser } from "@/hooks/use-user";
 
 export interface Book {
   id: number;
@@ -41,10 +573,27 @@ export interface Book {
     email: string;
   };
 }
+const bookSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  author: z.string().min(1, "Author is required"),
+  description: z.string().optional(),
+  rating: z
+    .string()
+    .optional()
+    .transform((val) => (val ? Number(val) : undefined))
+    .refine((val) => val === undefined || (val >= 0 && val <= 5), {
+      message: "Rating must be between 0 and 5",
+    }),
+  thumbnail: z.instanceof(File).optional(),
+});
+
+type BookForm = z.infer<typeof bookSchema>;
+type BookFormInput = z.input<typeof bookSchema>;
 
 export function BooksTable() {
   const { user } = useUser();
   const [books, setBooks] = React.useState<Book[]>([]);
+  const [authors, setAuthors] = React.useState<string[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [search, setSearch] = React.useState("");
   const [filters, setFilters] = React.useState<Record<string, string>>({});
@@ -54,26 +603,35 @@ export function BooksTable() {
     pageCount: 0,
     total: 0,
   });
-  const [createDialogOpen, setCreateDialogOpen] = React.useState(false);
   const [editDialogOpen, setEditDialogOpen] = React.useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = React.useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [selectedBook, setSelectedBook] = React.useState<Book | null>(null);
-  const [createForm, setCreateForm] = React.useState({
-    title: "",
-    author: "",
-    description: "",
-    rating: "",
-    thumbnail: undefined as File | undefined,
-  });
-  const [editForm, setEditForm] = React.useState({
-    title: "",
-    author: "",
-    description: "",
-    rating: "",
-    thumbnail: undefined as File | undefined,
-  });
   const [thumbnailPreview, setThumbnailPreview] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  const createForm = useForm<BookFormInput, any, BookForm>({
+    resolver: zodResolver(bookSchema),
+    defaultValues: {
+      title: "",
+      author: "",
+      description: "",
+      rating: "",
+      thumbnail: undefined,
+    },
+  });
+
+  const editForm = useForm<BookFormInput, any, BookForm>({
+    resolver: zodResolver(bookSchema),
+    defaultValues: {
+      title: "",
+      author: "",
+      description: "",
+      rating: "",
+      thumbnail: undefined,
+    },
+  });
+
   const fetchBooks = async () => {
     setLoading(true);
     try {
@@ -83,7 +641,10 @@ export function BooksTable() {
         uploader: user?.id,
       };
       if (search) params.search = search;
-      if (Object.keys(filters).length > 0) params.filters = filters;
+      if (filters.author) params.author = filters.author;
+      if (filters.rating) params.rating = filters.rating;
+      if (filters.date) params.date = filters.date;
+
       const res = await getBooks(params);
       setBooks(res.data.books);
       setPagination((prev) => ({
@@ -91,45 +652,16 @@ export function BooksTable() {
         pageCount: res.data.totalPages,
         total: res.data.total,
       }));
-    } catch (error) {
-      console.error("Failed to fetch books:", error);
+    } catch (error: any) {
+      toast.error("Failed to fetch books");
     } finally {
       setLoading(false);
     }
   };
-  const handleCreate = () => {
-    setCreateForm({
-      title: "",
-      author: "",
-      description: "",
-      rating: "",
-      thumbnail: undefined,
-    });
-    setThumbnailPreview(null);
-    setCreateDialogOpen(true);
-  };
-  const handleCreateSubmit = async () => {
-    setIsSubmitting(true);
-    try {
-      await createBook({
-        title: createForm.title,
-        author: createForm.author,
-        description: createForm.description,
-        rating: createForm.rating ? Number(createForm.rating) : undefined,
-        thumbnail: createForm.thumbnail,
-      });
-      setCreateDialogOpen(false);
-      toast.success("Book created successfully");
-      await fetchBooks();
-    } catch (error) {
-      toast.error("Failed to create book");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+
   const handleEdit = (book: Book) => {
     setSelectedBook(book);
-    setEditForm({
+    editForm.reset({
       title: book.title,
       author: book.author,
       description: book.description || "",
@@ -141,26 +673,42 @@ export function BooksTable() {
     );
     setEditDialogOpen(true);
   };
-  const handleEditSubmit = async () => {
+
+  const handleCreate = () => {
+    createForm.reset();
+    setThumbnailPreview(null);
+    setCreateDialogOpen(true);
+  };
+
+  const handleEditSubmit: SubmitHandler<BookForm> = async (data) => {
     if (!selectedBook) return;
     setIsSubmitting(true);
     try {
-      await updateBook(selectedBook.id, {
-        title: editForm.title,
-        author: editForm.author,
-        description: editForm.description,
-        rating: editForm.rating ? Number(editForm.rating) : undefined,
-        thumbnail: editForm.thumbnail,
-      });
+      await updateBook(selectedBook.id, data);
+      setEditDialogOpen(false);
       toast.success("Book updated successfully");
-      fetchBooks();
+      await fetchBooks();
     } catch (error) {
       toast.error("Failed to update book");
     } finally {
-      setEditDialogOpen(false);
       setIsSubmitting(false);
     }
   };
+
+  const handleCreateSubmit: SubmitHandler<BookForm> = async (data) => {
+    setIsSubmitting(true);
+    try {
+      await createBook(data);
+      setCreateDialogOpen(false);
+      toast.success("Book created successfully");
+      await fetchBooks();
+    } catch (error) {
+      toast.error("Failed to create book");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleDelete = (book: Book) => {
     setSelectedBook(book);
     setDeleteDialogOpen(true);
@@ -173,20 +721,21 @@ export function BooksTable() {
       await deleteBook(selectedBook.id);
       setDeleteDialogOpen(false);
       toast.success("Book deleted successfully");
-      fetchBooks();
+      await fetchBooks();
     } catch (error) {
       toast.error("Failed to delete book");
     } finally {
       setIsSubmitting(false);
     }
   };
+
   const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>, isCreate: boolean) => {
     const file = e.target.files?.[0];
     if (file) {
       if (isCreate) {
-        setCreateForm((prev) => ({ ...prev, thumbnail: file }));
+        createForm.setValue("thumbnail", file);
       } else {
-        setEditForm((prev) => ({ ...prev, thumbnail: file }));
+        editForm.setValue("thumbnail", file);
       }
       setThumbnailPreview(URL.createObjectURL(file));
     }
@@ -195,6 +744,7 @@ export function BooksTable() {
   React.useEffect(() => {
     fetchBooks();
   }, [pagination.pageIndex, pagination.pageSize, search, filters]);
+
   React.useEffect(() => {
     return () => {
       if (thumbnailPreview) {
@@ -202,20 +752,42 @@ export function BooksTable() {
       }
     };
   }, [thumbnailPreview]);
+
   return (
-    <div className="container w-full">
-      <div className="mb-8 flex items-center justify-between">
+    <div className="container mx-auto py-10">
+      <div className="mb-8 flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">Books Management</h1>
-          <p className="text-gray-500 mt-2">Manage library books info.</p>
+          <p className="text-gray-500 mt-2">
+            Manage library books, track status, and view publication info.
+          </p>
         </div>
-        <Button variant="default" onClick={handleCreate}>
+        <Button onClick={handleCreate} className="flex items-center gap-2">
+          <Plus className="h-4 w-4" />
           Add Book
         </Button>
       </div>
 
       <DataTable
         columns={[
+          {
+            accessorKey: "thumbnail",
+            header: "Thumbnail",
+            cell: ({ row }) => {
+              const book = row.original as Book;
+              return book.thumbnail ? (
+                <Image
+                  src={`${process.env.NEXT_PUBLIC_API_URL?.replace("/api", "")}${book.thumbnail}`}
+                  alt={book.title}
+                  width={50}
+                  height={50}
+                  className="object-cover rounded"
+                />
+              ) : (
+                <span>No Image</span>
+              );
+            },
+          },
           {
             accessorKey: "title",
             header: ({ column }) => (
@@ -243,21 +815,21 @@ export function BooksTable() {
             header: "Author",
           },
           {
-            accessorKey: "description",
-            header: "Description",
+            accessorKey: "uploadedAt",
+            header: "Published",
+            cell: ({ row }) => new Date(row.getValue("uploadedAt")).toLocaleDateString(),
           },
           {
             accessorKey: "rating",
             header: "Rating",
             cell: ({ row }) => {
-              const book = row.original as Book;
               return (
                 <div className="flex items-center gap-1">
                   {[...Array(5)].map((_, i) => (
                     <Star
                       key={i}
                       className={`w-3 h-3 ${
-                        i < Math.floor(book.rating!)
+                        i < Math.floor(row.getValue("rating") || 0)
                           ? "fill-amber-400 text-amber-400"
                           : "fill-gray-200 text-gray-200"
                       }`}
@@ -266,11 +838,12 @@ export function BooksTable() {
                 </div>
               );
             },
+            // (row.getValue("rating") || 0).toString(),
           },
           {
-            accessorKey: "uploadedAt",
-            header: "Published",
-            cell: ({ row }) => new Date(row.getValue("uploadedAt")).toLocaleDateString(),
+            accessorKey: "uploader.name",
+            header: "Uploader",
+            cell: ({ row }) => (row.original as Book).uploader.name,
           },
           {
             id: "actions",
@@ -303,7 +876,34 @@ export function BooksTable() {
         data={books}
         searchKey="title"
         searchPlaceholder="Search books by title or author..."
-        filterOptions={[]}
+        filterOptions={[
+          {
+            key: "author",
+            label: "Author",
+            options: [
+              { label: "All Authors", value: "all" },
+              ...authors.map((author) => ({ label: author, value: author })),
+            ],
+          },
+          {
+            key: "rating",
+            label: "Rating",
+            options: [
+              { label: "All Ratings", value: "all" },
+              { label: "0", value: "0" },
+              { label: "1", value: "1" },
+              { label: "2", value: "2" },
+              { label: "3", value: "3" },
+              { label: "4", value: "4" },
+              { label: "5", value: "5" },
+            ],
+          },
+          {
+            key: "date",
+            label: "Publication Date",
+            options: [{ label: "All Dates", value: "all" }],
+          },
+        ]}
         pagination={{
           pageIndex: pagination.pageIndex,
           pageSize: pagination.pageSize,
@@ -317,11 +917,16 @@ export function BooksTable() {
         onFilterChange={setFilters}
         loading={loading}
       />
+
+      {/* Create Dialog */}
       <Dialog
         open={createDialogOpen}
         onOpenChange={(open) => {
           setCreateDialogOpen(open);
-          if (!open) setThumbnailPreview(null);
+          if (!open) {
+            setThumbnailPreview(null);
+            createForm.reset();
+          }
         }}
       >
         <DialogContent>
@@ -329,94 +934,116 @@ export function BooksTable() {
             <DialogTitle>Create Book</DialogTitle>
             <DialogDescription>Add a new book to the library.</DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="create-title" className="text-right">
-                Title
-              </Label>
-              <Input
-                id="create-title"
-                value={createForm.title}
-                onChange={(e) => setCreateForm((prev) => ({ ...prev, title: e.target.value }))}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="create-author" className="text-right">
-                Author
-              </Label>
-              <Input
-                id="create-author"
-                value={createForm.author}
-                onChange={(e) => setCreateForm((prev) => ({ ...prev, author: e.target.value }))}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="create-description" className="text-right">
-                Description
-              </Label>
-              <Input
-                id="create-description"
-                value={createForm.description}
-                onChange={(e) =>
-                  setCreateForm((prev) => ({ ...prev, description: e.target.value }))
-                }
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="create-rating" className="text-right">
-                Rating
-              </Label>
-              <Input
-                id="create-rating"
-                type="number"
-                min="0"
-                max="5"
-                value={createForm.rating}
-                onChange={(e) => setCreateForm((prev) => ({ ...prev, rating: e.target.value }))}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="create-thumbnail" className="text-right">
-                Thumbnail
-              </Label>
-              <div className="col-span-3 space-y-2">
-                {thumbnailPreview && (
-                  <Image
-                    src={thumbnailPreview}
-                    alt="Thumbnail Preview"
-                    width={100}
-                    height={100}
-                    className="object-cover rounded"
+          <form onSubmit={createForm.handleSubmit(handleCreateSubmit)}>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="create-title" className="text-right">
+                  Title
+                </Label>
+                <div className="col-span-3">
+                  <Input
+                    id="create-title"
+                    {...createForm.register("title")}
+                    className={createForm.formState.errors.title ? "border-red-500" : ""}
                   />
-                )}
+                  {createForm.formState.errors.title && (
+                    <p className="text-red-500 text-sm">
+                      {createForm.formState.errors.title.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="create-author" className="text-right">
+                  Author
+                </Label>
+                <div className="col-span-3">
+                  <Input
+                    id="create-author"
+                    {...createForm.register("author")}
+                    className={createForm.formState.errors.author ? "border-red-500" : ""}
+                  />
+                  {createForm.formState.errors.author && (
+                    <p className="text-red-500 text-sm">
+                      {createForm.formState.errors.author.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="create-description" className="text-right">
+                  Description
+                </Label>
                 <Input
-                  id="create-thumbnail"
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleThumbnailChange(e, true)}
+                  id="create-description"
+                  {...createForm.register("description")}
+                  className="col-span-3"
                 />
               </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="create-rating" className="text-right">
+                  Rating
+                </Label>
+                <div className="col-span-3">
+                  <Input
+                    id="create-rating"
+                    type="number"
+                    min="0"
+                    max="5"
+                    {...createForm.register("rating")}
+                    className={createForm.formState.errors.rating ? "border-red-500" : ""}
+                  />
+                  {createForm.formState.errors.rating && (
+                    <p className="text-red-500 text-sm">
+                      {createForm.formState.errors.rating.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="create-thumbnail" className="text-right">
+                  Thumbnail
+                </Label>
+                <div className="col-span-3 space-y-2">
+                  {thumbnailPreview && (
+                    <Image
+                      src={thumbnailPreview}
+                      alt="Thumbnail Preview"
+                      width={100}
+                      height={100}
+                      className="object-cover rounded"
+                    />
+                  )}
+                  <Input
+                    id="create-thumbnail"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleThumbnailChange(e, true)}
+                  />
+                </div>
+              </div>
             </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleCreateSubmit} disabled={isSubmitting}>
-              {isSubmitting ? "Creating..." : "Create"}
-            </Button>
-          </DialogFooter>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setCreateDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Creating..." : "Create"}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Dialog */}
       <Dialog
         open={editDialogOpen}
         onOpenChange={(open) => {
           setEditDialogOpen(open);
-          if (!open) setThumbnailPreview(null);
+          if (!open) {
+            setThumbnailPreview(null);
+            editForm.reset();
+          }
         }}
       >
         <DialogContent>
@@ -424,88 +1051,108 @@ export function BooksTable() {
             <DialogTitle>Edit Book</DialogTitle>
             <DialogDescription>Update the book details below.</DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="title" className="text-right">
-                Title
-              </Label>
-              <Input
-                id="title"
-                value={editForm.title}
-                onChange={(e) => setEditForm((prev) => ({ ...prev, title: e.target.value }))}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="author" className="text-right">
-                Author
-              </Label>
-              <Input
-                id="author"
-                value={editForm.author}
-                onChange={(e) => setEditForm((prev) => ({ ...prev, author: e.target.value }))}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="description" className="text-right">
-                Description
-              </Label>
-              <Input
-                id="description"
-                value={editForm.description}
-                onChange={(e) => setEditForm((prev) => ({ ...prev, description: e.target.value }))}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="rating" className="text-right">
-                Rating
-              </Label>
-              <Input
-                id="rating"
-                type="number"
-                min="0"
-                max="5"
-                value={editForm.rating}
-                onChange={(e) => setEditForm((prev) => ({ ...prev, rating: e.target.value }))}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="thumbnail" className="text-right">
-                Thumbnail
-              </Label>
-              <div className="col-span-3 space-y-2">
-                {thumbnailPreview && (
-                  <Image
-                    src={thumbnailPreview}
-                    alt="Thumbnail Preview"
-                    width={100}
-                    height={100}
-                    className="object-cover rounded"
+          <form onSubmit={editForm.handleSubmit(handleEditSubmit)}>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit-title" className="text-right">
+                  Title
+                </Label>
+                <div className="col-span-3">
+                  <Input
+                    id="edit-title"
+                    {...editForm.register("title")}
+                    className={editForm.formState.errors.title ? "border-red-500" : ""}
                   />
-                )}
+                  {editForm.formState.errors.title && (
+                    <p className="text-red-500 text-sm">
+                      {editForm.formState.errors.title.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit-author" className="text-right">
+                  Author
+                </Label>
+                <div className="col-span-3">
+                  <Input
+                    id="edit-author"
+                    {...editForm.register("author")}
+                    className={editForm.formState.errors.author ? "border-red-500" : ""}
+                  />
+                  {editForm.formState.errors.author && (
+                    <p className="text-red-500 text-sm">
+                      {editForm.formState.errors.author.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit-description" className="text-right">
+                  Description
+                </Label>
                 <Input
-                  id="thumbnail"
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleThumbnailChange(e, false)}
+                  id="edit-description"
+                  {...editForm.register("description")}
+                  className="col-span-3"
                 />
               </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit-rating" className="text-right">
+                  Rating
+                </Label>
+                <div className="col-span-3">
+                  <Input
+                    id="edit-rating"
+                    type="number"
+                    min="0"
+                    max="5"
+                    {...editForm.register("rating")}
+                    className={editForm.formState.errors.rating ? "border-red-500" : ""}
+                  />
+                  {editForm.formState.errors.rating && (
+                    <p className="text-red-500 text-sm">
+                      {editForm.formState.errors.rating.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit-thumbnail" className="text-right">
+                  Thumbnail
+                </Label>
+                <div className="col-span-3 space-y-2">
+                  {thumbnailPreview && (
+                    <Image
+                      src={thumbnailPreview}
+                      alt="Thumbnail Preview"
+                      width={100}
+                      height={100}
+                      className="object-cover rounded"
+                    />
+                  )}
+                  <Input
+                    id="edit-thumbnail"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleThumbnailChange(e, false)}
+                  />
+                </div>
+              </div>
             </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleEditSubmit} disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : "Save"}
-            </Button>
-          </DialogFooter>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Saving..." : "Save"}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 
+      {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>

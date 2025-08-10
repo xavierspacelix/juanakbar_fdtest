@@ -1,135 +1,315 @@
-# Turborepo starter
+# Juan Akbar FDTest - Book Management App
 
-This Turborepo starter is maintained by the Turborepo core team.
+A monorepo application built with **Turborepo**, featuring a **Next.js** (TypeScript) frontend in `apps/frontend` and an **Express.js** (TypeScript) backend in `apps/backend`. The app uses **Prisma** for database management, with the schema defined in `packages/prisma`. It supports CRUD operations for managing books, including title, author, description, rating, and thumbnail upload, with JWT-based authentication via `httpOnly` cookies.
 
-## Using this example
+## Table of Contents
 
-Run the following command:
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Prerequisites](#prerequisites)
+- [Setup Instructions](#setup-instructions)
+- [Running the Project](#running-the-project)
+- [Environment Variables](#environment-variables)
+- [Database Setup](#database-setup)
+- [Authentication](#authentication)
+- [Available Scripts](#available-scripts)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
 
-```sh
-npx create-turbo@latest
-```
+## Tech Stack
 
-## What's inside?
+- **Frontend**: Next.js (TypeScript), Shadcn/ui, React Hot Toast, @tanstack/react-query, react-hook-form, zod
+- **Backend**: Express.js (TypeScript), Prisma
+- **Monorepo**: Turborepo
+- **Database**: PostgreSQL
+- **Other**: Axios, loglevel, Lucide Icons, Tailwind CSS, Headless UI, Heroicons
 
-This Turborepo includes the following packages/apps:
-
-### Apps and Packages
-
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
+## Project Structure
 
 ```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
+juanakbar_fdtest/
+├── apps/
+│   ├── backend/              # Express.js backend
+│   │   ├── src/              # Backend source code
+│   │   ├── package.json      # Backend dependencies
+│   │   └── tsconfig.json     # Backend TypeScript config
+│   ├── frontend/             # Next.js frontend
+│   │   ├── src/              # Frontend source code
+│   │   ├── package.json      # Frontend dependencies
+│   │   └── tsconfig.json     # Frontend TypeScript config
+├── packages/
+│   ├── prisma/               # Prisma schema and migrations
+│   │   ├── schema.prisma     # Prisma schema definition
+│   │   ├── migrations/       # Database migrations
+│   │   └── package.json      # Prisma package config
+├── package.json              # Root package.json (Turborepo)
+├── turbo.json                # Turborepo configuration
+└── README.md                 # This file
 ```
 
-You can build a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+## Prerequisites
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build --filter=docs
+- **Node.js**: v18 or higher
+- **npm**: v10.9.2 or higher
+- **PostgreSQL**: v14 or higher
+- **Git**: For cloning the repository
+- **Docker** (optional): For running PostgreSQL in a container
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-```
+## Setup Instructions
 
-### Develop
+1. **Clone the Repository**
 
-To develop all apps and packages, run the following command:
+   ```bash
+   git clone https://github.com/xavierspacelix/juanakbar_fdtest
+   cd juanakbar_fdtest
+   ```
 
-```
-cd my-turborepo
+2. **Install Dependencies**
+   Install all dependencies at the root level using Turborepo:
 
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev
+   ```bash
+   npm install
+   ```
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
-```
+3. **Set Up Environment Variables**
+   - For `apps/backend/.env`:
+     ```env
+     DATABASE_URL="postgresql://postgres:root@localhost:5432/juanakbar_fdtest"
+     JWT_ACCESS_SECRET="supersecret"
+     JWT_REFRESH_SECRET="supersecretrefresh"
+     APP_URL="http://localhost:4000"
+     APP_FRONTEND_URL="http://localhost:3000"
+     NODE_ENV=development
+     EMAIL_FROM="no-reply@example.com"
+     ```
+   - For `apps/frontend/.env.local`:
+     ```env
+     NEXT_PUBLIC_API_URL=http://localhost:4000/api
+     ```
 
-You can develop a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+   **Notes**:
+   - Replace `DATABASE_URL` with your PostgreSQL connection string if different.
+   - Use secure values for `JWT_ACCESS_SECRET` and `JWT_REFRESH_SECRET` in production.
+   - Configure `EMAIL_FROM` for email notifications (e.g., with an SMTP service).
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev --filter=web
+4. **Set Up PostgreSQL**
+   - Install and start PostgreSQL locally, or use Docker:
+     ```bash
+     docker run -d --name postgres -p 5432:5432 -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=root -e POSTGRES_DB=juanakbar_fdtest postgres:14
+     ```
+   - Verify the database is accessible using the `DATABASE_URL`.
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
+5. **Run Prisma Migrations**
+   Apply the database schema defined in `packages/prisma/schema.prisma`:
 
-### Remote Caching
+   ```bash
+   npm run db:migrate
+   ```
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
+6. **Generate Prisma Client**
+   Generate the Prisma client for the backend:
+   ```bash
+   npm run db:generate
+   ```
 
-Turborepo can use a technique known as [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
+## Running the Project
 
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
+1. **Development Mode**
+   Run both backend and frontend in development mode using Turborepo:
 
-```
-cd my-turborepo
+   ```bash
+   npm run dev
+   ```
 
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo login
+   - **Frontend**: Runs on `http://localhost:3000`
+   - **Backend**: Runs on `http://localhost:4000`
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
-```
+2. **Individual Apps**
+   - Backend only:
+     ```bash
+     cd apps/backend
+     npm run dev
+     ```
+   - Frontend only:
+     ```bash
+     cd apps/frontend
+     npm run dev
+     ```
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
+3. **Build for Production**
+   Build all apps:
+   ```bash
+   npm run build
+   ```
+   Start the production server:
+   ```bash
+   npm run start
+   ```
 
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
+## Environment Variables
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo link
+| Variable              | Description                            | Example                                                      |
+| --------------------- | -------------------------------------- | ------------------------------------------------------------ |
+| `DATABASE_URL`        | PostgreSQL connection string (backend) | `postgresql://postgres:root@localhost:5432/juanakbar_fdtest` |
+| `JWT_ACCESS_SECRET`   | Secret for JWT access tokens           | `supersecret`                                                |
+| `JWT_REFRESH_SECRET`  | Secret for JWT refresh tokens          | `supersecretrefresh`                                         |
+| `APP_URL`             | Backend URL                            | `http://localhost:4000`                                      |
+| `APP_FRONTEND_URL`    | Frontend URL                           | `http://localhost:3000`                                      |
+| `NODE_ENV`            | Environment (development/production)   | `development`                                                |
+| `EMAIL_FROM`          | Sender email for notifications         | `no-reply@example.com`                                       |
+| `NEXT_PUBLIC_API_URL` | Backend API URL (frontend)             | `http://localhost:4000/api`                                  |
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
-```
+## Database Setup
 
-## Useful Links
+- The Prisma schema is located in `packages/prisma/schema.prisma`.
+- Example schema snippet:
 
-Learn more about the power of Turborepo:
+  ```prisma
+  generator client {
+    provider = "prisma-client-js"
+  }
 
-- [Tasks](https://turborepo.com/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.com/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.com/docs/reference/configuration)
-- [CLI Usage](https://turborepo.com/docs/reference/command-line-reference)
+  datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+  }
+
+  model User {
+    id             Int      @id @default(autoincrement())
+    name           String
+    email          String   @unique
+    password       String
+    avatar         String?
+    emailVerified  DateTime?
+    createdAt      DateTime @default(now())
+    updatedAt      DateTime @updatedAt
+    books          Book[]
+    emailVerification EmailVerification?
+    passwordReset     PasswordReset[]
+    refreshTokens     RefreshToken[]
+  }
+
+  model EmailVerification {
+    id        Int      @id @default(autoincrement())
+    tokenHash String   @unique
+    user      User     @relation(fields: [userId], references: [id])
+    userId    Int      @unique
+    expiresAt DateTime
+    createdAt DateTime @default(now())
+  }
+
+  model PasswordReset {
+    id        Int      @id @default(autoincrement())
+    tokenHash String   @unique
+    user      User     @relation(fields: [userId], references: [id])
+    userId    Int
+    expiresAt DateTime
+    createdAt DateTime @default(now())
+  }
+
+  model RefreshToken {
+    id        Int      @id @default(autoincrement())
+    tokenHash String   @unique
+    user      User     @relation(fields: [userId], references: [id])
+    userId    Int
+    expiresAt DateTime
+    createdAt DateTime @default(now())
+  }
+
+  model Book {
+    id          Int      @id @default(autoincrement())
+    title       String
+    author      String
+    description String?
+    thumbnail   String?
+    rating      Int       @default(0)
+    uploadedAt  DateTime  @default(now())
+    uploaderId  Int
+    uploader    User      @relation(fields: [uploaderId], references: [id])
+  }
+
+  ```
+
+- Run migrations:
+  ```bash
+  npm run db:migrate
+  ```
+- Generate Prisma client:
+  ```bash
+  npm run db:generate
+  ```
+- Inspect the database with Prisma Studio:
+  ```bash
+  npx prisma studio --schema=packages/prisma/schema.prisma
+  ```
+
+## Authentication
+
+- The backend uses JWT-based authentication with `httpOnly` cookies for `accessToken` and `refreshToken`.
+- To authenticate:
+  1. Log in via the frontend (e.g., `http://localhost:3000/login`) or send a `POST /api/auth/login` request with credentials (e.g., `{ "email": "user@example.com", "password": "password" }`).
+  2. The backend sets `httpOnly` cookies (`accessToken` and `refreshToken`) in the response.
+  3. The browser automatically includes these cookies in subsequent requests to `http://localhost:4000/api`.
+- Ensure the backend is configured to handle `httpOnly` cookies with CORS:
+
+  ```javascript
+  // In apps/backend/src/index.ts
+  import cors from "cors";
+
+  app.use(
+    cors({
+      origin: "http://localhost:3000",
+      credentials: true,
+    })
+  );
+  ```
+
+- Protected endpoints (e.g., `POST /api/books`, `PUT /api/books/:id`, `DELETE /api/books/:id`) require a valid `accessToken` cookie.
+
+## Available Scripts
+
+In the root directory:
+
+- `npm run dev`: Run all apps in development mode.
+- `npm run build`: Build all apps for production.
+- `npm run start`: Start all apps in production mode.
+- `npm run lint`: Run ESLint across all apps.
+- `npm run format`: Format code with Prettier.
+- `npm run check-types`: Check TypeScript types.
+- `npm run db:generate`: Generate Prisma client.
+- `npm run db:migrate`: Apply database migrations.
+- `npm run db:deploy`: Deploy migrations in production.
+
+## Troubleshooting
+
+- **Database Connection Error**:
+  - Verify `DATABASE_URL` in `apps/backend/.env`.
+  - Ensure PostgreSQL is running and accessible (`psql -h localhost -U postgres -d juanakbar_fdtest`).
+  - Run `npm run db:migrate` to apply migrations.
+- **Frontend API Error**:
+  - Check `NEXT_PUBLIC_API_URL` in `apps/frontend/.env.local`.
+  - Ensure the backend is running on `http://localhost:4000`.
+- **Authentication Error (401/403)**:
+  - Verify `JWT_ACCESS_SECRET` and `JWT_REFRESH_SECRET` in `apps/backend/.env`.
+  - Ensure you are logged in (check for `httpOnly` cookies in browser DevTools > Application > Cookies).
+  - Test login endpoint: `POST http://localhost:4000/api/auth/login`.
+  - Ensure CORS is configured with `credentials: true` in the backend.
+- **Thumbnail Upload Fails**:
+  - Ensure the backend uses `multer` for `multipart/form-data`.
+  - Check file size limits and allowed extensions (e.g., JPG, PNG).
+- **Logs**:
+  - Check browser console for frontend logs (via `loglevel`).
+  - Check terminal for backend logs.
+- **TypeScript Errors**:
+  - Run `npm run check-types` to identify type issues.
+  - Ensure all dependencies are installed (`npm install`).
+
+Use `husky` and `lint-staged` for pre-commit checks:
+
+- Linting with ESLint
+- Formatting with Prettier
+- Type checking with TypeScript
+
+---
+
+Built with 💻 by Juan Akbar Indrian
